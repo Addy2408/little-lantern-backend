@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\{Request};
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\{Auth, Hash, Log, Mail};
 use App\Models\{User};
 use App\Mail\OtpMail;
+use App\Traits\ApiResponse;
 
 class AuthController extends Controller
 {
+    use ApiResponse;
+    
     protected function sendOtp(Request $request, $message = "OTP send")
     {
         try {

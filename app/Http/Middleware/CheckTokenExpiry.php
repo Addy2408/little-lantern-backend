@@ -7,9 +7,12 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Sanctum\PersonalAccessToken;
+use App\Traits\ApiResponse;
 
 class CheckTokenExpiry
 {
+    use ApiResponse;
+
     /**
      * Handle an incoming request.
      *
@@ -26,10 +29,7 @@ class CheckTokenExpiry
             if ($token instanceof PersonalAccessToken) {
                 if ($token->expires_at?->isPast()) {
                     $token->delete();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Your session has expired. Please login again.'
-                    ], 401);
+                    return $this->sendError(401, 'Your session has expired. Please login again.', ['success' => false]);
                 }
             }
         }

@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\{Auth, Hash, Log};
+use Illuminate\Support\Facades\{Hash, Log};
 use App\Models\Admin;
+use App\Traits\ApiResponse;
 
 class AdminController extends Controller
 {
+    use ApiResponse;
+
     public function login(Request $request)
     {
         try {
@@ -32,7 +36,7 @@ class AdminController extends Controller
                 return $this->sendError(401, 'Invalid credentials', ['success' => false,]);
             }
 
-            $token = $admin->createToken('AdminToken')->plainTextToken;
+            $token = $admin->createToken('AdminToken', ['*'], Carbon::now()->addMinutes(60))->plainTextToken;
 
             Log::info("Login successful for email: {$email}");
 

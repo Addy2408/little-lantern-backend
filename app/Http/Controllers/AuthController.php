@@ -11,7 +11,7 @@ use App\Traits\ApiResponse;
 class AuthController extends Controller
 {
     use ApiResponse;
-    
+
     protected function sendOtp(Request $request, $message = "OTP send")
     {
         try {
@@ -103,9 +103,11 @@ class AuthController extends Controller
                 Log::info("OTP verified successfully for email: {$email}");
 
                 $user->tokens()->where('expires_at', '<', now())->delete();
+
                 $token = $user->createToken('auth_token')->plainTextToken;
+
                 $user->tokens()->latest()->first()->update([
-                    'expires_at' => now()->addDays(30)
+                    'expires_at' => now()->addHour()
                 ]);
 
                 return $this->sendResponse(
@@ -205,7 +207,13 @@ class AuthController extends Controller
                 );
             }
 
-            $token = $user->createToken('authToken')->plainTextToken;
+            $plainTextToken = $user->createToken('authToken')->plainTextToken;
+
+            $user->tokens()->latest()->first()->update([
+                'expires_at' => now()->addHour(),
+            ]);
+
+            $token = $plainTextToken;
 
             Log::info("Login successful for email: {$user->email}");
 

@@ -36,7 +36,11 @@ class AdminController extends Controller
                 return $this->sendError(401, 'Invalid credentials', ['success' => false,]);
             }
 
-            $token = $admin->createToken('AdminToken', ['*'], Carbon::now()->addMinutes(60))->plainTextToken;
+            $token = $admin->createToken('AdminToken')->plainTextToken;
+
+            $admin->tokens()->latest()->first()->update([
+                'expires_at' => now()->addDay(),
+            ]);
 
             Log::info("Login successful for email: {$email}");
 
@@ -46,6 +50,7 @@ class AdminController extends Controller
                 [
                     'success' => true,
                     'token' => $token,
+                    'expires_at' => now()->addDay(),
                     'admin' => $admin,
                 ]
             );

@@ -1,24 +1,36 @@
 <?php
 
-use App\Http\Controllers\{AuthController, AdminController, ProductController};
+use App\Http\Controllers\{AuthController, ProductController};
 use Illuminate\Support\Facades\Route;
 
-// User Auth Routes
-Route::post('/auth/otp/resend', [AuthController::class, 'resendOtp']);
-Route::post('/auth/otp/verify', [AuthController::class, 'verifyOtp']);
-Route::post('/auth/signup', [AuthController::class, 'signup']);
-Route::post('/auth/login', [AuthController::class, 'login']);
-Route::post('/auth/password/forget', [AuthController::class, 'forgetPassword']);
-Route::post('/auth/password/reset', [AuthController::class, 'resetPassword'])->middleware('auth:sanctum');
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+| All routes for authentication, products, etc. grouped logically.
+| This keeps modules together and adds clarity on who can access what.
+*/
 
-// Admin Auth Routes
-Route::post('/auth/admin/login', [AdminController::class, 'login']);
+// Auth Routes
+Route::prefix('auth')->group(function () {
+    Route::post('/signup', [AuthController::class, 'signup']);
+    Route::post('/login', [AuthController::class, 'login']);
+
+    Route::post('/otp/resend', [AuthController::class, 'resendOtp']);
+    Route::post('/otp/verify', [AuthController::class, 'verifyOtp']);
+
+    Route::post('/password/forget', [AuthController::class, 'forgetPassword']);
+    Route::post('/password/reset', [AuthController::class, 'resetPassword'])->middleware('auth:sanctum');
+});
 
 // Product Routes
-Route::group(['middleware' => 'auth:sanctum'], function () {
-    Route::get('/products', [ProductController::class, 'getAllProducts']);
-    Route::get('/products/{id}', [ProductController::class, 'getProductById']);
-    Route::post('/products', [ProductController::class, 'createProduct'])->middleware('is_admin');
-    Route::patch('/products/{id}', [ProductController::class, 'updateProduct'])->middleware('is_admin');
-    Route::delete('/products/{id}', [ProductController::class, 'deleteProduct'])->middleware('is_admin');
+Route::prefix('products')->middleware('auth:sanctum')->group(function () {
+    Route::get('/', [ProductController::class, 'getAllProducts']);
+    Route::get('/{id}', [ProductController::class, 'getProductById']);
+
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/', [ProductController::class, 'createProduct']);
+        Route::patch('/{id}', [ProductController::class, 'updateProduct']);
+        Route::delete('/{id}', [ProductController::class, 'deleteProduct']);
+    });
 });

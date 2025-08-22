@@ -104,10 +104,12 @@ class AuthController extends Controller
 
                 $user->tokens()->where('expires_at', '<', now())->delete();
 
-                $token = $user->createToken('auth_token')->plainTextToken;
+                $token = $user->createToken("authToken-{$user->role}", [$user->role])->plainTextToken;
+
+                $expiry = $user->role === 'admin' ? now()->addDay() : now()->addHour();
 
                 $user->tokens()->latest()->first()->update([
-                    'expires_at' => now()->addHour()
+                    'expires_at' => $expiry,
                 ]);
 
                 return $this->sendResponse(
@@ -197,6 +199,11 @@ class AuthController extends Controller
                 return $this->sendError(401, 'Invalid credentials', ['success' => false]);
             }
 
+            if (!$user->is_active) {
+                Log::warning("Login failed: Inactive account for {$user->email}");
+                return $this->sendError(403, 'Your account is deactivated. Please contact support.', ['success' => false]);
+            }
+
             if (!$user->email_verified_at) {
                 Log::warning("Login failed: Email un-verified for {$user->email}");
                 $this->sendOtp($request, "OTP resent for email verification");
@@ -207,15 +214,20 @@ class AuthController extends Controller
                 );
             }
 
-            $plainTextToken = $user->createToken('authToken')->plainTextToken;
+            $token = $user->createToken("authToken-{$user->role}", [$user->role])->plainTextToken;
+
+            $expiry = $user->role === 'admin' ? now()->addDay() : now()->addHour();
 
             $user->tokens()->latest()->first()->update([
-                'expires_at' => now()->addHour(),
+                'expires_at' => $expiry,
             ]);
 
-            $token = $plainTextToken;
+            $user->update([
+                'last_login_at' => now(),
+                'last_login_ip' => $request->ip(),
+            ]);
 
-            Log::info("Login successful for email: {$user->email}");
+            Log::info("Login successful for email: {$user->email}, role: {$user->role}");
 
             return $this->sendResponse(
                 200,
@@ -223,6 +235,7 @@ class AuthController extends Controller
                 [
                     'success' => true,
                     'token' => $token,
+                    'role' => $user->role,
                     'user' => $user,
                 ]
             );

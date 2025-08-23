@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Traits\ApiResponse;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 class UserController extends Controller
@@ -16,49 +17,59 @@ class UserController extends Controller
     public function profile(Request $request)
     {
         try {
-            $request->validate([
-                'first_name' => 'required|string|max:255',
-                'last_name' => 'string|max:255',
-                'country_code' => 'required|string|max:10',
-                'mobile' => 'required|string|max:15',
-                'steet/house' => 'required|string|max:255',
-                'city' => 'required|string|max:100',
-                'state' => 'required|string|max:100',
-                'pin_code' => 'required|string|max:10',
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            Log::info("Profile update request received", ['user_id' => $user->id]);
+
+            $validated = $request->validate([
+                'first_name'   => 'required|string|max:255',
+                'last_name'    => 'nullable|string|max:255',
+                'country_code' => 'required|string|max:5',
+                'mobile'       => 'required|string|max:15',
+                'street'       => 'required|string|max:255',
+                'house_number' => 'required|string|max:50',
+                'city'         => 'required|string|max:100',
+                'state'        => 'required|string|max:100',
+                'pin_code'     => 'required|string|max:10',
+                'avatar'       => 'nullable|image|mimes:jpg,jpeg,png,gif|max:2048',
+                'dob'          => 'nullable|date|before:today',
+                'gender'       => 'nullable|in:male,female,other',
             ]);
 
-            $userId = Auth::id();
+            if ($request->hasFile('avatar')) {
+                if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                    Storage::disk('public')->delete($user->avatar);
+                    Log::info("Old avatar deleted", ['user_id' => $user->id]);
+                }
 
-            Log::info("Fetching user profile for user ID: {$userId}");
+                $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
+                Log::info("New avatar uploaded", ['user_id' => $user->id, 'path' => $validated['avatar']]);
+            }
 
-            $profile = User::where('id', $userId)
-                ->update([
-                    'first_name' => $request->input('first_name'),
-                    'last_name' => $request->input('last_name'),
-                    'country_code' => $request->input('country_code'),
-                    'mobile' => $request->input('mobile'),
-                    'address' => $request->input('address'),
-                    'city' => $request->input('city'),
-                    'state' => $request->input('state'),
-                    'pin_code' => $request->input('pin_code'),
-                ]);
+            $user->update($validated);
 
-            $this->sendResponse(
+            Log::info("User profile updated successfully", ['user_id' => $user->id]);
+
+            return $this->sendResponse(
                 201,
                 'User profile updated successfully.',
                 [
                     'success' => true,
-                    'profile' => $profile,
+                    'profile' => $user->fresh(),
                 ]
             );
         } catch (Exception $e) {
-            Log::error("Error creating user profile: {$e->getMessage()}");
+            Log::error("Profile update failed", [
+                'user_id' => Auth::id(),
+                'error'   => $e->getMessage(),
+            ]);
+
             return $this->sendError(
                 500,
-                "Something went wrong while creating user profile",
+                "Something went wrong while updating user profile",
                 [
                     'success' => false,
-                    'error' => $e->getMessage(),
+                    'error'   => $e->getMessage(),
                 ]
             );
         }

@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{AuthController, ProductController};
+use App\Http\Controllers\{AuthController, ProductController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,4 +33,9 @@ Route::prefix('products')->middleware('auth:sanctum')->group(function () {
         Route::patch('/{id}', [ProductController::class, 'updateProduct']);
         Route::delete('/{id}', [ProductController::class, 'deleteProduct']);
     });
+});
+
+// User Routes
+Route::prefix('user')->middleware('auth:sanctum')->group(function () {
+    Route::match(['PATCH', 'POST'], '/profile', [UserController::class, 'profile']);
 });

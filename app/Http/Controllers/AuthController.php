@@ -26,7 +26,7 @@ class AuthController extends Controller
 
             Mail::to($email)->send(new OtpMail($otp));
 
-            Log::info("Email sent successfully to email: {$email}");
+            Log::info("Email sent successfully.");
 
             User::where('email', $email)->update(['otp' => $otp]);
 

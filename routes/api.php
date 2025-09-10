@@ -36,6 +36,11 @@ Route::prefix('products')->middleware('auth:sanctum')->group(function () {
 });
 
 // User Routes
-Route::prefix('user')->middleware('auth:sanctum')->group(function () {
-    Route::match(['PATCH', 'POST'], '/profile', [UserController::class, 'profile']);
+Route::prefix('users')->middleware('auth:sanctum')->group(function () {
+    Route::post('/', [UserController::class, 'profile']);
+    Route::delete('/{id}', [UserController::class, 'deleteUser']);
+    
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/', [UserController::class, 'fetchUsers']);
+    });
 });

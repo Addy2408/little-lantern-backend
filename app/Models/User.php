@@ -8,6 +8,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @method static \Illuminate\Database\Eloquent\Builder select($columns = ['*'])
+ * @method static \Illuminate\Database\Eloquent\Builder paginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null)
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
